@@ -11,8 +11,10 @@ import {
   Menu, 
   X, 
   ChevronDown,
-  Heart
+  Heart,
+  Search
 } from 'lucide-react';
+import SearchModal from './SearchModal';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -29,6 +31,7 @@ const Navbar = () => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -82,6 +85,16 @@ const Navbar = () => {
           {/* Right Action Buttons */}
           <div className="flex items-center gap-1.5 sm:gap-2.5">
             
+            {/* Live Search Trigger Button */}
+            <button
+              onClick={() => setSearchModalOpen(true)}
+              className="p-2 sm:p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Tezkor qidiruv"
+              aria-label="Search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
@@ -317,6 +330,12 @@ const Navbar = () => {
           </div>
         )}
       </div>
+
+      {/* Live Search Modal */}
+      <SearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+      />
     </header>
   );
 };

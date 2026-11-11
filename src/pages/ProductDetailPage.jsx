@@ -9,12 +9,11 @@ import {
   RefreshCw, 
   Check, 
   Plus, 
-  Minus,
-  Sparkles,
-  Heart,
-  MessageSquare,
-  Send,
-  User
+  Minus, 
+  Sparkles, 
+  Heart, 
+  MessageSquare, 
+  Send 
 } from 'lucide-react';
 import { productService } from '../services/productService';
 import { useCart } from '../context/CartContext';
@@ -23,13 +22,15 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatPrice } from '../utils/constants';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ProductCard from '../components/ProductCard';
+import { INITIAL_PRODUCTS } from '../utils/mockData';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const toast = useToast();
 
   const [product, setProduct] = useState(null);
@@ -59,22 +60,30 @@ const ProductDetailPage = () => {
   const [newRating, setNewRating] = useState(5);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchProduct = async () => {
       setLoading(true);
       try {
         const res = await productService.getProductById(id);
-        if (res?.product) {
+        if (isMounted && res?.product) {
           setProduct(res.product);
         }
       } catch (err) {
         console.error('Failed to load product details', err);
-        toast.error('Mahsulot ma’lumotlarini yuklashda xatolik');
+        if (isMounted) {
+          toast.error('Mahsulot ma’lumotlarini yuklashda xatolik');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchProduct();
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const isFavorite = product ? isInWishlist(product.id) : false;
@@ -99,7 +108,7 @@ const ProductDetailPage = () => {
 
     const reviewObj = {
       id: Date.now(),
-      name: user?.name || 'Foydalanuvchi',
+      name: user?.name || 'Xaridor',
       rating: newRating,
       date: 'Hozirgina',
       comment: newComment.trim()
@@ -131,6 +140,10 @@ const ProductDetailPage = () => {
   const discountPercent = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : null;
+
+  const relatedProducts = INITIAL_PRODUCTS.filter(
+    p => p.category === product.category && p.id !== product.id
+  ).slice(0, 4);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
@@ -408,6 +421,26 @@ const ProductDetailPage = () => {
         </div>
 
       </div>
+
+      {/* Related Products Section */}
+      {relatedProducts.length > 0 && (
+        <div className="pt-10 border-t border-slate-200 dark:border-slate-800 space-y-6">
+          <div>
+            <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              O‘xshash mahsulotlar
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              Ushbu toifadagi boshqa mashhur mahsulotlar
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {relatedProducts.map((relProd) => (
+              <ProductCard key={relProd.id} product={relProd} />
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
   );

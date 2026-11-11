@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -12,15 +13,43 @@ const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'online_shop_re
 const ACCESS_TOKEN_EXPIRY = '3m'; // 3 daqiqa
 const REFRESH_TOKEN_EXPIRY = '7d'; // 7 kun
 
-// Middleware
+// ======================== SECURITY MIDDLEWARE ========================
+
+// 1. HELMET: HTTP xavfsizlik sarlavhalarini (Security Headers) qo'shish
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }, // Rasmlar va media fayllarning to'siqsiz yuklanishi
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: false // Vite/Frontend bilan mos ishlashi uchun
+}));
+
+// 2. CORS (Cross-Origin Resource Sharing) xavfsiz konfiguratsiyasi
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL
+].filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Brauzer bo'lmagan so'rovlar (Postman, mobil ilovalar) yoki ro'yxatdagi domenlar
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS to'sig'i: ${origin} manzilidan ulanish taqiqlangan`));
+    }
+  },
+  credentials: true, // Xavfsiz httpOnly cookie (Refresh Token) almashinuvi uchun
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie']
+};
+
+app.use(cors(corsOptions));
+
+// 3. Body parsers & cookies
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
 
 // In-Memory Database
 const users = [
